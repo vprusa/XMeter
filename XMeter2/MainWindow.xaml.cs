@@ -7,10 +7,16 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Hardcodet.Wpf.TaskbarNotification;
+using Microsoft.Win32;
+using XMeter2.Annotations;
+using Brush = System.Windows.Media.Brush;
 using Color = System.Windows.Media.Color;
 using Point = System.Windows.Point;
 
@@ -32,6 +38,11 @@ namespace XMeter2
         private string _toolTipText = "Initializing...";
         private string _startTime = DateTime.Now.AddSeconds(-1).ToString("HH:mm:ss");
         private string _endTime = DateTime.Now.ToString("HH:mm:ss");
+        private Brush _popupBackground;
+        private Brush _popupBorder;
+        private bool _isPopupOpen;
+        private Brush _popupPanel;
+        private TaskbarIcon _notificationIcon;
 
         public string StartTime
         {
@@ -91,10 +102,55 @@ namespace XMeter2
         public Icon TrayIcon
         {
             get => _icon;
-            set {
+            set
+            {
                 if (ReferenceEquals(_icon, value)) return;
                 _icon = value;
                 NotificationIcon.Icon = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Brush PopupBackground
+        {
+            get => _popupBackground;
+            private set
+            {
+                if (value == _popupBackground) return;
+                _popupBackground = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Brush PopupBorder
+        {
+            get => _popupBorder;
+            set
+            {
+                if (Equals(value, _popupBorder)) return;
+                _popupBorder = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Brush PopupPanel
+        {
+            get => _popupPanel;
+            set
+            {
+                if (Equals(value, _popupPanel)) return;
+                _popupPanel = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsPopupOpen
+        {
+            get => _isPopupOpen;
+            set
+            {
+                if (value == _isPopupOpen) return;
+                _isPopupOpen = value;
                 OnPropertyChanged();
             }
         }
@@ -103,7 +159,7 @@ namespace XMeter2
         {
             InitializeComponent();
             
-            SettingsManager.ReadSettings();
+            //SettingsManager.ReadSettings();
 
             _timer.Interval = TimeSpan.FromSeconds(1);
             _timer.Tick += Timer_Tick;
@@ -113,61 +169,64 @@ namespace XMeter2
 
             UpdateSpeeds();
 
-            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(Hide));
+            SystemEvents.UserPreferenceChanging += SystemEvents_UserPreferenceChanging;
+
+            UpdateAccentColor();
         }
 
-        bool preventReshow = true;
-        private void NotificationIcon_OnMouseLeftButtonDown(object sender, RoutedEventArgs routedEventArgs)
+        private void UpdateAccentColor()
         {
-            Debug.WriteLine("DOWN!");
-            if (IsVisible)
-                preventReshow = true;
+            var c1 = AccentColorSet.ActiveSet["SystemAccent"];
+            var c2 = AccentColorSet.ActiveSet["SystemAccentDark2"];
+            var c3 = AccentColorSet.ActiveSet["SystemAccentLight1"];
+            c2.A = 192;
+            c3.A = 96;
+            PopupBackground = new SolidColorBrush(c2);
+            PopupBorder = new SolidColorBrush(c1);
+            PopupPanel = new SolidColorBrush(c3);
         }
 
-        private void NotificationIcon_OnMouseLeftButtonUp(object sender, RoutedEventArgs routedEventArgs)
+        private void Popup_OnOpened(object sender, EventArgs e)
         {
-            Debug.WriteLine("UP!");
-            if (preventReshow)
-            {
-                preventReshow = false;
-                return;
-            }
-            Left = SystemParameters.WorkArea.Width - Width - 8;
-            Top = SystemParameters.WorkArea.Height - Height - 8;
-            Show();
+            Natives.EnableBlur((Popup)sender);
         }
 
-        private void Window_Closing(object sender, CancelEventArgs e)
+        private void SystemEvents_UserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
         {
-            Debug.WriteLine("CLOSING!");
-            e.Cancel = true;
-            Hide();
-        }
-
-        private void Window_Deactivated(object sender, EventArgs e)
-        {
-            Debug.WriteLine("DEACTIVATED!");
-            Hide();
-        }
-
-        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            SettingsManager.WriteSettings();
+            UpdateAccentColor();
         }
 
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Shutdown();
         }
-        
+
+#if false
+        public static void ReadSettings()
+        {
+            Application.Current.MainWindow.Width = (int)Registry.GetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredWidth", 384);
+            Application.Current.MainWindow.Height = (int)Registry.GetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredHeight", 240);
+        }
+
+        public static void WriteSettings()
+        {
+            Registry.SetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredWidth", (int)Application.Current.MainWindow.Width);
+            Registry.SetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredHeight", (int)Application.Current.MainWindow.Height);
+        }
+#endif
+
+        private void NotificationIcon_OnTrayLeftMouseUp(object sender, RoutedEventArgs e)
+        {
+            var popup = (Popup)FindResource("Popup");
+            popup.HorizontalOffset = SystemParameters.WorkArea.Width - popup.Width;
+            popup.VerticalOffset = SystemParameters.WorkArea.Height - popup.Height;
+            popup.PlacementRectangle = SystemParameters.WorkArea;
+            popup.Visibility = Visibility.Visible;
+            IsPopupOpen = true;
+        }
+
         private void Timer_Tick(object o, EventArgs e)
         {
-            if (IsVisible && !Natives.ApplicationIsActivated())
-            {
-                Hide();
-                return;
-            }
-
             UpdateSpeeds();
 
             var sendActivity = _upPoints.Last.Value.Bytes > 0;
@@ -179,11 +238,11 @@ namespace XMeter2
 
             ToolTipText = $"Send: {Util.FormatUSize(_upPoints.Last.Value.Bytes)}; Receive: {Util.FormatUSize(_downPoints.Last.Value.Bytes)}";
 
-            if (IsVisible)
+            if (IsPopupOpen)
             {
                 var upTime = (_upPoints.Last.Value.TimeStamp - _upPoints.First.Value.TimeStamp).TotalSeconds;
                 var downTime = (_downPoints.Last.Value.TimeStamp - _downPoints.First.Value.TimeStamp).TotalSeconds;
-                var spanSeconds = Math.Max(upTime,downTime);
+                var spanSeconds = Math.Max(upTime, downTime);
 
                 var currentCheck = DateTime.Now;
                 StartTime = currentCheck.AddSeconds(-spanSeconds).ToString("HH:mm:ss");
@@ -238,12 +297,12 @@ namespace XMeter2
 
         private void UpdateGraph2()
         {
-            picGraph.Children.Clear();
+            PicGraph.Children.Clear();
 
             var max = Math.Max(_lastMaxDown, _lastMaxUp);
 
             BuildPolygon(_upPoints, max, 255, 24, 32, true);
-            BuildPolygon(_downPoints, max, 48, 48, 255,  false);
+            BuildPolygon(_downPoints, max, 48, 48, 255, false);
         }
 
         private void BuildPolygon(LinkedList<TimeEntry> points, ulong max, byte r, byte g, byte b, bool up)
@@ -251,16 +310,16 @@ namespace XMeter2
             if (points.Count == 0)
                 return;
 
-            var bottom = picGraph.ActualHeight;
-            var right = picGraph.ActualWidth;
+            var bottom = PicGraph.ActualHeight;
+            var right = PicGraph.ActualWidth;
 
             var lastTime = points.Last.Value.TimeStamp;
 
             var elapsed = (lastTime - points.First.Value.TimeStamp).TotalSeconds;
 
             var scale = 1.0;
-            if (elapsed > 0 && elapsed < picGraph.ActualWidth)
-                scale = picGraph.ActualWidth / elapsed;
+            if (elapsed > 0 && elapsed < PicGraph.ActualWidth)
+                scale = PicGraph.ActualWidth / elapsed;
 
             var polygon = new Polygon();
             for (var current = points.Last; current != null; current = current.Previous)
@@ -268,7 +327,7 @@ namespace XMeter2
                 var td = (lastTime - current.Value.TimeStamp).TotalSeconds;
 
                 var xx = right - td * scale;
-                var yy = current.Value.Bytes * picGraph.ActualHeight / max;
+                var yy = current.Value.Bytes * PicGraph.ActualHeight / max;
 
                 polygon.Points.Add(new Point(xx, up ? bottom - yy : yy));
             }
@@ -276,7 +335,7 @@ namespace XMeter2
             polygon.Points.Add(new Point(right, up ? bottom : 0));
 
             polygon.Fill = new SolidColorBrush(Color.FromArgb(255, r, g, b));
-            picGraph.Children.Add(polygon);
+            PicGraph.Children.Add(polygon);
         }
 
         private class TimeEntry
@@ -293,6 +352,7 @@ namespace XMeter2
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        [NotifyPropertyChangedInvocator]
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

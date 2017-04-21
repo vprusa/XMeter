@@ -1,0 +1,46 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:XMeter2"
+                    xmlns:tb="http://www.hardcodet.net/taskbar">
+
+    <tb:TaskbarIcon x:Key="NotificationIcon" 
+                    ToolTipText = "{Binding ToolTipText}"
+                    TrayLeftMouseDown="NotificationIcon_OnMouseLeftButtonDown"
+                    TrayLeftMouseUp="NotificationIcon_OnMouseLeftButtonUp"
+                    DataContext="{x:Static local:TrayContext.Instance}">
+        <tb:TaskbarIcon.TrayPopup>
+            <local:MainWindow x:Name="Popup" />
+        </tb:TaskbarIcon.TrayPopup>
+        <tb:TaskbarIcon.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="Exit" Command="{Binding ExitCommand}"/>
+            </ContextMenu>
+        </tb:TaskbarIcon.ContextMenu>
+        <tb:TaskbarIcon.TrayToolTip>
+            <ToolTip Padding="2" UseLayoutRounding="True">
+                <Grid MinWidth="5cm">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Padding="4,2" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" >
+                        <Label.Content>
+                            <TextBlock>
+                                <Run Text="{Binding UpSpeed}" />
+                            </TextBlock>
+                        </Label.Content>
+                    </Label>
+                    <Image Grid.Column="1" VerticalAlignment="Center" Source="Resources/U1D1.png" Stretch="None" SnapsToDevicePixels="True" />
+                    <Label Grid.Column="2" Padding="4,2" VerticalContentAlignment="Center" >
+                        <Label.Content>
+                            <TextBlock>
+                                <Run Text="{Binding DownSpeed}" />
+                            </TextBlock>
+                        </Label.Content>
+                    </Label>
+                </Grid>
+            </ToolTip>
+        </tb:TaskbarIcon.TrayToolTip>
+    </tb:TaskbarIcon>
+</ResourceDictionary>

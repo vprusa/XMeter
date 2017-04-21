@@ -7,27 +7,13 @@
         xmlns:tb="http://www.hardcodet.net/taskbar"
         mc:Ignorable="d"
         Title="" WindowStyle="None" ResizeMode = "CanResize" ShowInTaskbar="False" Height="240" Width="480"  FontSize="0.12in"
-        SizeChanged="Window_SizeChanged"
-        Closing="Window_Closing" Deactivated="Window_Deactivated"
         UseLayoutRounding="True"
         DataContext="{Binding RelativeSource={RelativeSource Self}}">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="auto"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="auto"/>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="auto"/>
-            <ColumnDefinition Width="2*"/>
-        </Grid.ColumnDefinitions>
-
-        <tb:TaskbarIcon x:Name="NotificationIcon"
-                        ToolTipText = "{Binding ToolTipText}"
-                        TrayPopup=""
-                        TrayLeftMouseDown="NotificationIcon_OnMouseLeftButtonDown"
-                        TrayLeftMouseUp="NotificationIcon_OnMouseLeftButtonUp">
+      <tb:TaskbarIcon x:Name="NotificationIcon"
+                        NoLeftClickDelay="True"
+                        TrayLeftMouseUp="NotificationIcon_OnTrayLeftMouseUp"
+                        ToolTipText = "{Binding ToolTipText}">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Exit" Click="Exit_Click"/>
@@ -35,71 +21,49 @@
             </tb:TaskbarIcon.ContextMenu>
             <tb:TaskbarIcon.TrayToolTip>
                 <ToolTip Padding="2" UseLayoutRounding="True">
-                    <Grid MinWidth="5cm">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Padding="4,2" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" >
-                            <Label.Content>
-                                <TextBlock>
-                                    <Run Text="{Binding UpSpeed}" />
-                                </TextBlock>
-                            </Label.Content>
-                        </Label>
-                        <Image Grid.Column="1" VerticalAlignment="Center" Source="Resources/U1D1.png" Stretch="None" SnapsToDevicePixels="True" />
-                        <Label Grid.Column="2" Padding="4,2" VerticalContentAlignment="Center" >
-                            <Label.Content>
-                                <TextBlock>
-                                    <Run Text="{Binding DownSpeed}" />
-                                </TextBlock>
-                            </Label.Content>
-                        </Label>
-                    </Grid>
+                    <local:SpeedDisplay MinWidth="5cm" UpSpeed="{Binding UpSpeed}" DownSpeed="{Binding DownSpeed}"/>
                 </ToolTip>
             </tb:TaskbarIcon.TrayToolTip>
         </tb:TaskbarIcon>
 
-        <Border Grid.Column="1" Margin="0" Grid.ColumnSpan="4">
-            <Canvas Name="picGraph" Background="Black" ClipToBounds="True"/>
-        </Border>
+        <Popup x:Name="Popup"
+               DataContext="{Binding RelativeSource={RelativeSource Self}}"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Bottom"
+               Placement="Absolute"
+               HorizontalOffset="8"
+               VerticalOffset="8"
+               StaysOpen="False"
+               AllowsTransparency="True"
+               Height="240" Width="480"
+               IsOpen="{Binding IsPopupOpen}"
+               Opened="Popup_OnOpened">
+            <Border BorderBrush="{Binding PopupBorder}" BorderThickness="1,1,1,0" Background="{Binding PopupBackground}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
 
-        <Label Content="{Binding StartTime}" Padding="4,2" Grid.Column="1" Grid.Row="1" />
-        <Label Content="{Binding EndTime}" Padding="4,2" Grid.Column="3" Grid.Row="1" HorizontalContentAlignment="Right" />
+                    <Canvas Margin="5" Name="PicGraph" ClipToBounds="True"/>
 
-        <Grid Grid.Row="1" Grid.Column="2" MinWidth="5cm">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Label Grid.Column="0" Padding="4,2" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" >
-                <Label.Content>
-                    <TextBlock>
-                        <Run Text="{Binding UpSpeed}" />
-                    </TextBlock>
-                </Label.Content>
-            </Label>
-            <Image Grid.Column="1" VerticalAlignment="Center" Source="Resources/U1D1.png" Stretch="None" SnapsToDevicePixels="True" />
-            <Label Grid.Column="2" Padding="4,2" VerticalContentAlignment="Center" >
-                <Label.Content>
-                    <TextBlock>
-                        <Run Text="{Binding DownSpeed}" />
-                    </TextBlock>
-                </Label.Content>
-            </Label>
-        </Grid>
-        <!--        
-            <Image Grid.Column="1" VerticalAlignment="Center" Source="Resources/U1D1.ico" Stretch="None" SnapsToDevicePixels="True" />
-            <Canvas Grid.Column="1" VerticalAlignment="Center" Width="16" Height="16" SnapsToDevicePixels="True">
-                <Path Data="M 0,15 0,0 15,0 Z" Fill="#000000" />
-                <Path Data="M 1,12.35 1,1 12.35,1 Z" Fill="#FFFFFF" />
-                <Path Data="M 2,9.7 2,2 9.7,2 Z" Fill="#FF0000" />
-                <Path Data="M 16,1 16,16 1,16 Z" Fill="#000000" />
-                <Path Data="M 15,3.65 15,15 3.65,15"  Fill="#FFFFFF" />
-                <Path Data="M 14,6.3 14,14 6.3,14 Z" Fill="#008CFF" />
-            </Canvas>
-        -->
+                    <Border Margin="0" Grid.Row="1" Background="{Binding PopupPanel}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="2*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Label FontSize="0.12in" Content="{Binding StartTime}" Padding="4,2" Grid.Column="1" />
+                            <Label FontSize="0.12in" Content="{Binding EndTime}" Padding="4,2" Grid.Column="3" HorizontalContentAlignment="Right" />
+
+                            <local:SpeedDisplay Grid.Column="2" MinWidth="5cm" UpSpeed="{Binding UpSpeed}" DownSpeed="{Binding DownSpeed}"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Popup>
     </Grid>
 </Window>
