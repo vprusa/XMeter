@@ -158,8 +158,10 @@ namespace XMeter2
         public MainWindow()
         {
             InitializeComponent();
-            
+
             //SettingsManager.ReadSettings();
+
+            Hide();
 
             _timer.Interval = TimeSpan.FromSeconds(1);
             _timer.Tick += Timer_Tick;
@@ -182,9 +184,8 @@ namespace XMeter2
             }));
             var c1 = AccentColorSet.ActiveSet["SystemAccent"];
             var c2 = AccentColorSet.ActiveSet["SystemAccentDark2"];
-            var c3 = AccentColorSet.ActiveSet["SystemAccentLight1"];
+            var c3 = Color.FromArgb(192,255,255,255); //AccentColorSet.ActiveSet["SystemTextDarkTheme"];
             c2.A = 192;
-            c3.A = 96;
             PopupBackground = new SolidColorBrush(c2);
             PopupBorder = new SolidColorBrush(c1);
             PopupPanel = new SolidColorBrush(c3);
@@ -192,6 +193,9 @@ namespace XMeter2
 
         private void Popup_OnOpened(object sender, EventArgs e)
         {
+            Popup.HorizontalOffset = SystemParameters.WorkArea.Width - Popup.Width;
+            Popup.VerticalOffset = SystemParameters.WorkArea.Height - Popup.Height;
+            Popup.PlacementRectangle = SystemParameters.WorkArea;
             Natives.EnableBlur((Popup)sender);
         }
 
@@ -219,14 +223,6 @@ namespace XMeter2
         }
 #endif
 
-        private void NotificationIcon_OnTrayLeftMouseUp(object sender, RoutedEventArgs e)
-        {
-            Popup.HorizontalOffset = SystemParameters.WorkArea.Width - Popup.Width;
-            Popup.VerticalOffset = SystemParameters.WorkArea.Height - Popup.Height;
-            Popup.PlacementRectangle = SystemParameters.WorkArea;
-            IsPopupOpen = true;
-        }
-
         private void Timer_Tick(object o, EventArgs e)
         {
             UpdateSpeeds();
@@ -240,7 +236,7 @@ namespace XMeter2
 
             ToolTipText = $"Send: {Util.FormatUSize(_upPoints.Last.Value.Bytes)}; Receive: {Util.FormatUSize(_downPoints.Last.Value.Bytes)}";
 
-            if (!IsPopupOpen)
+            if (!Popup.IsOpen)
                 return;
 
             var upTime = (_upPoints.Last.Value.TimeStamp - _upPoints.First.Value.TimeStamp).TotalSeconds;
