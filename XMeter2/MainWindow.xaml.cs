@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -42,7 +43,6 @@ namespace XMeter2
         private Brush _popupBorder;
         private bool _isPopupOpen;
         private Brush _popupPanel;
-        private TaskbarIcon _notificationIcon;
 
         public string StartTime
         {
@@ -176,6 +176,10 @@ namespace XMeter2
 
         private void UpdateAccentColor()
         {
+            File.WriteAllLines(@"F:\Accents.txt", AccentColorSet.ActiveSet.GetAllColorNames().Select(s => {
+                var c = AccentColorSet.ActiveSet[s];
+                return $"{s}: {c}";
+            }));
             var c1 = AccentColorSet.ActiveSet["SystemAccent"];
             var c2 = AccentColorSet.ActiveSet["SystemAccentDark2"];
             var c3 = AccentColorSet.ActiveSet["SystemAccentLight1"];
@@ -217,11 +221,9 @@ namespace XMeter2
 
         private void NotificationIcon_OnTrayLeftMouseUp(object sender, RoutedEventArgs e)
         {
-            var popup = (Popup)FindResource("Popup");
-            popup.HorizontalOffset = SystemParameters.WorkArea.Width - popup.Width;
-            popup.VerticalOffset = SystemParameters.WorkArea.Height - popup.Height;
-            popup.PlacementRectangle = SystemParameters.WorkArea;
-            popup.Visibility = Visibility.Visible;
+            Popup.HorizontalOffset = SystemParameters.WorkArea.Width - Popup.Width;
+            Popup.VerticalOffset = SystemParameters.WorkArea.Height - Popup.Height;
+            Popup.PlacementRectangle = SystemParameters.WorkArea;
             IsPopupOpen = true;
         }
 
@@ -238,18 +240,18 @@ namespace XMeter2
 
             ToolTipText = $"Send: {Util.FormatUSize(_upPoints.Last.Value.Bytes)}; Receive: {Util.FormatUSize(_downPoints.Last.Value.Bytes)}";
 
-            if (IsPopupOpen)
-            {
-                var upTime = (_upPoints.Last.Value.TimeStamp - _upPoints.First.Value.TimeStamp).TotalSeconds;
-                var downTime = (_downPoints.Last.Value.TimeStamp - _downPoints.First.Value.TimeStamp).TotalSeconds;
-                var spanSeconds = Math.Max(upTime, downTime);
+            if (!IsPopupOpen)
+                return;
 
-                var currentCheck = DateTime.Now;
-                StartTime = currentCheck.AddSeconds(-spanSeconds).ToString("HH:mm:ss");
-                EndTime = currentCheck.ToString("HH:mm:ss");
+            var upTime = (_upPoints.Last.Value.TimeStamp - _upPoints.First.Value.TimeStamp).TotalSeconds;
+            var downTime = (_downPoints.Last.Value.TimeStamp - _downPoints.First.Value.TimeStamp).TotalSeconds;
+            var spanSeconds = Math.Max(upTime, downTime);
 
-                UpdateGraph2();
-            }
+            var currentCheck = DateTime.Now;
+            StartTime = currentCheck.AddSeconds(-spanSeconds).ToString("HH:mm:ss");
+            EndTime = currentCheck.ToString("HH:mm:ss");
+
+            UpdateGraph2();
         }
 
         private void UpdateIcon(bool sendActivity, bool recvActivity)

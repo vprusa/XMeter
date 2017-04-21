@@ -1,65 +1,7 @@
 ﻿<Application x:Class="XMeter2.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:XMeter2"
-             xmlns:tb="http://www.hardcodet.net/taskbar"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <tb:TaskbarIcon x:Key="NotificationIcon"
-                        NoLeftClickDelay="True"
-                        TrayLeftMouseUp="NotificationIcon_OnTrayLeftMouseUp"
-                        ToolTipText = "{Binding ToolTipText}">
-            <tb:TaskbarIcon.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="Exit" Click="Exit_Click"/>
-                </ContextMenu>
-            </tb:TaskbarIcon.ContextMenu>
-            <tb:TaskbarIcon.TrayToolTip>
-                <ToolTip Padding="2" UseLayoutRounding="True">
-                    <local:SpeedDisplay MinWidth="5cm" UpSpeed="{Binding UpSpeed}" DownSpeed="{Binding DownSpeed}"/>
-                </ToolTip>
-            </tb:TaskbarIcon.TrayToolTip>
-        </tb:TaskbarIcon>
-
-        <Popup x:Key="Popup"
-               DataContext="{Binding RelativeSource={RelativeSource Self}}"
-               HorizontalAlignment="Right"
-               VerticalAlignment="Bottom"
-               Placement="Absolute"
-               HorizontalOffset="8"
-               VerticalOffset="8"
-               StaysOpen="False"
-               AllowsTransparency="True"
-               Height="240" Width="480"
-               IsOpen="{Binding IsPopupOpen}"
-               Opened="Popup_OnOpened">
-            <Border BorderBrush="{Binding PopupBorder}" BorderThickness="1,1,1,0" Background="{Binding PopupBackground}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="auto"/>
-                    </Grid.RowDefinitions>
-
-                    <Canvas Margin="5" Name="PicGraph" ClipToBounds="True"/>
-
-                    <Border Margin="0" Grid.Row="1" Background="{Binding PopupPanel}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="auto"/>
-                                <ColumnDefinition Width="2*"/>
-                                <ColumnDefinition Width="auto"/>
-                                <ColumnDefinition Width="2*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Label FontSize="0.12in" Content="{Binding StartTime}" Padding="4,2" Grid.Column="1" />
-                            <Label FontSize="0.12in" Content="{Binding EndTime}" Padding="4,2" Grid.Column="3" HorizontalContentAlignment="Right" />
-
-                            <local:SpeedDisplay Grid.Column="2" MinWidth="5cm" UpSpeed="{Binding UpSpeed}" DownSpeed="{Binding DownSpeed}"/>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </Border>
-        </Popup>
-
     </Application.Resources>
 </Application>

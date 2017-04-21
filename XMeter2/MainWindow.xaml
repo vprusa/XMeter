@@ -5,15 +5,46 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:XMeter2"
         xmlns:tb="http://www.hardcodet.net/taskbar"
-        mc:Ignorable="d"
-        Title="" WindowStyle="None" ResizeMode = "CanResize" ShowInTaskbar="False" Height="240" Width="480"  FontSize="0.12in"
-        UseLayoutRounding="True"
+        mc:Ignorable="d" WindowStyle="None" ShowInTaskbar="False" Height="50" Width="50"
         DataContext="{Binding RelativeSource={RelativeSource Self}}">
     <Grid>
-      <tb:TaskbarIcon x:Name="NotificationIcon"
+        <tb:TaskbarIcon x:Name="NotificationIcon"
                         NoLeftClickDelay="True"
-                        TrayLeftMouseUp="NotificationIcon_OnTrayLeftMouseUp"
                         ToolTipText = "{Binding ToolTipText}">
+            <tb:TaskbarIcon.TrayPopup>
+                <Popup StaysOpen="False"
+                       AllowsTransparency="True"
+                       Height="240" Width="480"
+                       IsOpen="{Binding IsPopupOpen}"
+                       Opened="Popup_OnOpened">
+                    <Border BorderBrush="{Binding PopupBorder}" BorderThickness="1,1,1,0" Background="{Binding PopupBackground}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Canvas Margin="5" Name="PicGraph" ClipToBounds="True"/>
+
+                            <Border Margin="0" Grid.Row="1" Background="{Binding PopupPanel}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="2*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Label FontSize="0.12in" Content="{Binding StartTime}" Padding="4,2" Grid.Column="1" />
+                                    <Label FontSize="0.12in" Content="{Binding EndTime}" Padding="4,2" Grid.Column="3" HorizontalContentAlignment="Right" />
+
+                                    <local:SpeedDisplay Grid.Column="2" MinWidth="5cm" UpSpeed="{Binding UpSpeed}" DownSpeed="{Binding DownSpeed}"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Popup>
+            </tb:TaskbarIcon.TrayPopup>
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Exit" Click="Exit_Click"/>
@@ -27,7 +58,6 @@
         </tb:TaskbarIcon>
 
         <Popup x:Name="Popup"
-               DataContext="{Binding RelativeSource={RelativeSource Self}}"
                HorizontalAlignment="Right"
                VerticalAlignment="Bottom"
                Placement="Absolute"
@@ -45,7 +75,7 @@
                         <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
 
-                    <Canvas Margin="5" Name="PicGraph" ClipToBounds="True"/>
+                    <!--<Canvas Margin="5" Name="PicGraph" ClipToBounds="True"/>-->
 
                     <Border Margin="0" Grid.Row="1" Background="{Binding PopupPanel}">
                         <Grid>
