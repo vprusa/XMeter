@@ -8,8 +8,10 @@ namespace XMeter2
     {
         public static void ReadSettings()
         {
-            Application.Current.MainWindow.Width =   (int)Registry.GetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredWidth", 384);
-            Application.Current.MainWindow.Height = (int)Registry.GetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredHeight", 240);
+            // Application.Current.MainWindow.Width = (int)Registry.GetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredWidth", 384);
+            // Application.Current.MainWindow.Height = (int)Registry.GetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredHeight", 240);
+            Application.Current.MainWindow.Width = 384; // (int)Registry.GetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredWidth", 384);
+            Application.Current.MainWindow.Height = 240; // (int)Registry.GetValue("HKEY_CURRENT_USER\\Software\\XMeter", "PreferredHeight", 240);
         }
 
         public static void WriteSettings()

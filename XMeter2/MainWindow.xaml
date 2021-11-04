@@ -42,18 +42,19 @@
         <DropShadowEffect x:Key="TextShadow" BlurRadius="6" Opacity=".75" ShadowDepth="0" RenderingBias="Performance" Color="{Binding TextShadow}" />
     </Window.Resources>
     <Grid>
-        <tb:TaskbarIcon x:Name="NotificationIcon"
+        <tb:TaskbarIcon x:Name="NotificationIconCPU"
                         TrayLeftMouseUp="NotificationIcon_OnMouseLeftButtonUp"
-                        NoLeftClickDelay="True">
+                        NoLeftClickDelay="True" MinWidth="100" Width="101">
             <tb:TaskbarIcon.ContextMenu>
-                <ContextMenu>
+                <ContextMenu MinWidth="100">
                     <MenuItem IsEnabled="False" Header="{Binding MenuTitle}"></MenuItem>
                     <Separator />
                     <MenuItem Header="Exit" Click="Exit_Click"/>
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
+
             <tb:TaskbarIcon.TrayToolTip>
-                <ToolTip Padding="2" UseLayoutRounding="True">
+                <ToolTip Padding="2" UseLayoutRounding="True" MinWidth="100">
                     <Grid MinWidth="200">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -79,7 +80,43 @@
                 </ToolTip>
             </tb:TaskbarIcon.TrayToolTip>
         </tb:TaskbarIcon>
-
+        <tb:TaskbarIcon x:Name="NotificationIconRAM"
+                        TrayLeftMouseUp="NotificationIcon_OnMouseLeftButtonUp"
+                        NoLeftClickDelay="True" MinWidth="30" Width="30" MinHeight="30" Height="30">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu MinWidth="100">
+                    <MenuItem IsEnabled="False" Header="{Binding MenuTitle}"></MenuItem>
+                    <Separator />
+                    <MenuItem Header="Exit" Click="Exit_Click"/>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+            <tb:TaskbarIcon.TrayToolTip>
+                <ToolTip Padding="2" UseLayoutRounding="True" MinWidth="100">
+                    <Grid MinWidth="200">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Padding="4,2" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" >
+                            <Label.Content>
+                                <TextBlock>
+                                    <Run Text="{Binding UpSpeed, Mode=OneWay, Converter={StaticResource USizeConverter}}" />
+                                </TextBlock>
+                            </Label.Content>
+                        </Label>
+                        <Image Grid.Column="1" VerticalAlignment="Center" Source="Resources/U1D1.png" Stretch="None" SnapsToDevicePixels="True" />
+                        <Label Grid.Column="2" Padding="4,2" VerticalContentAlignment="Center" >
+                            <Label.Content>
+                                <TextBlock>
+                                    <Run Text="{Binding DownSpeed, Mode=OneWay, Converter={StaticResource USizeConverter}}" />
+                                </TextBlock>
+                            </Label.Content>
+                        </Label>
+                    </Grid>
+                </ToolTip>
+            </tb:TaskbarIcon.TrayToolTip>
+        </tb:TaskbarIcon>
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>

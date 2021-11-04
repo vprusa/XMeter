@@ -5,6 +5,9 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
+using System.Text;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
@@ -17,9 +20,75 @@ using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using Point = System.Windows.Point;
+using DColor = System.Drawing.Color;
+using DFont = System.Drawing.Font;
+using DFontStyle = System.Drawing.FontStyle;
+using DFontFamily = System.Drawing.FontFamily;
+using DBrush = System.Drawing.Brush;
+
+//using System.Drawing.FontFamily;
+
 
 namespace XMeter2
 {
+
+    
+    public static class PerformanceInfo
+    {
+        // https://stackoverflow.com/questions/10027341/c-sharp-get-used-memory-in
+
+        [DllImport("psapi.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetPerformanceInfo([Out] out PerformanceInformation PerformanceInformation, [In] int Size);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PerformanceInformation
+        {
+            public int Size;
+            public IntPtr CommitTotal;
+            public IntPtr CommitLimit;
+            public IntPtr CommitPeak;
+            public IntPtr PhysicalTotal;
+            public IntPtr PhysicalAvailable;
+            public IntPtr SystemCache;
+            public IntPtr KernelTotal;
+            public IntPtr KernelPaged;
+            public IntPtr KernelNonPaged;
+            public IntPtr PageSize;
+            public int HandlesCount;
+            public int ProcessCount;
+            public int ThreadCount;
+        }
+
+        public static Int64 GetPhysicalAvailableMemoryInMiB()
+        {
+            PerformanceInformation pi = new PerformanceInformation();
+            if (GetPerformanceInfo(out pi, Marshal.SizeOf(pi)))
+            {
+                return Convert.ToInt64((pi.PhysicalAvailable.ToInt64() * pi.PageSize.ToInt64() / 1048576));
+            }
+            else
+            {
+                return -1;
+            }
+
+        }
+
+        public static Int64 GetTotalMemoryInMiB()
+        {
+            PerformanceInformation pi = new PerformanceInformation();
+            if (GetPerformanceInfo(out pi, Marshal.SizeOf(pi)))
+            {
+                return Convert.ToInt64((pi.PhysicalTotal.ToInt64() * pi.PageSize.ToInt64() / 1048576));
+            }
+            else
+            {
+                return -1;
+            }
+
+        }
+    }
+
     public partial class MainWindow : INotifyPropertyChanged
     {
         private readonly DispatcherTimer _timer = new DispatcherTimer();
@@ -51,7 +120,8 @@ namespace XMeter2
         private bool _isPopupOpen;
         private bool _opening;
         private bool _shown;
-        private Icon _icon;
+        private Icon _iconCPU;
+        private Icon _iconRAM;
         private Brush _mainText;
 
         public string StartTime
@@ -120,14 +190,31 @@ namespace XMeter2
             }
         }
 
-        public Icon TrayIcon
+        public Icon TrayIconCPU
         {
-            get => _icon;
+            get => _iconCPU;
             set
             {
-                if (ReferenceEquals(_icon, value)) return;
-                _icon = value;
-                NotificationIcon.Icon = value;
+                if (ReferenceEquals(_iconCPU, value)) return;
+                _iconCPU = value;
+                NotificationIconCPU.Icon = value;
+                // NotificationIconCPU.MinWidth = 100;
+                // NotificationIconCPU.Width = 100;
+                OnPropertyChanged();
+            }
+        }
+
+
+        public Icon TrayIconRAM
+        {
+            get => _iconRAM;
+            set
+            {
+                if (ReferenceEquals(_iconRAM, value)) return;
+                _iconRAM = value;
+                NotificationIconRAM.Icon = value;
+                NotificationIconRAM.MinWidth = 30;
+                NotificationIconRAM.Width = 30;
                 OnPropertyChanged();
             }
         }
@@ -335,7 +422,7 @@ namespace XMeter2
         {
             Application.Current.Shutdown();
         }
-        
+
         private void Timer_Tick(object o, EventArgs e)
         {
             PerformUpdate();
@@ -353,7 +440,8 @@ namespace XMeter2
             UpSpeedMax = sendMax;
             DownSpeedMax = recvMax;
 
-            UpdateIcon();
+            UpdateIconCPU();
+            UpdateIconRAM();
 
             if (!IsVisible || _opening)
                 return;
@@ -377,12 +465,15 @@ namespace XMeter2
             EndTime = currentCheck.ToString("HH:mm:ss", CultureInfo.CurrentUICulture);
         }
 
-        private void UpdateIcon()
+
+
+        private void UpdateIconRAM()
         {
             var (sendSpeed, recvSpeed) = DataTracker.Instance.CurrentSpeed;
             var sendActivity = sendSpeed > 0;
             var recvActivity = recvSpeed > 0;
 
+            /*
             if (sendActivity && recvActivity)
             {
                 TrayIcon = Properties.Resources.U1D1;
@@ -399,6 +490,93 @@ namespace XMeter2
             {
                 TrayIcon = Properties.Resources.U0D0;
             }
+            */
+            //Font fontToUse = new Font("Microsoft Sans Serif", 16, FontStyle.Normal, GraphicsUnit.Pixel);
+            Font fontToUse = new Font("Microsoft Sans Serif", 11, DFontStyle.Regular, GraphicsUnit.Pixel);
+            DBrush brushToUse = new SolidBrush(DColor.White);
+            Bitmap bitmapText = new Bitmap(16, 16);
+            Graphics g = System.Drawing.Graphics.FromImage(bitmapText);
+
+            IntPtr hIcon;
+            Int64 phav = PerformanceInfo.GetPhysicalAvailableMemoryInMiB();
+            Int64 tot = PerformanceInfo.GetTotalMemoryInMiB();
+            decimal percentFree = ((decimal)phav / (decimal)tot) * 100;
+            decimal percentOccupied = 100 - percentFree;
+
+            string icon_text = "" + percentOccupied + "";
+            // g.Clear(DColor.Transparent);
+            g.Clear(DColor.DarkGreen);
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+            //g.DrawString(str, fontToUse, brushToUse, -4, -2);
+            g.DrawString(icon_text, fontToUse, brushToUse, -2, 2);
+            hIcon = (bitmapText.GetHicon());
+            TrayIconCPU = System.Drawing.Icon.FromHandle(hIcon);
+        }
+        /*
+        private void UpdateIconRAM()
+        {
+            var (sendSpeed, recvSpeed) = DataTracker.Instance.CurrentSpeed;
+            var sendActivity = sendSpeed > 0;
+            var recvActivity = recvSpeed > 0;
+
+            //Font fontToUse = new Font("Microsoft Sans Serif", 16, FontStyle.Normal, GraphicsUnit.Pixel);
+            Font fontToUse = new Font("Microsoft Sans Serif", 8, DFontStyle.Regular, GraphicsUnit.Pixel);
+            DBrush brushToUse = new SolidBrush(DColor.White);
+            Bitmap bitmapText = new Bitmap(24, 24);
+            Graphics g = System.Drawing.Graphics.FromImage(bitmapText);
+
+            IntPtr hIcon;
+            Int64 phav = PerformanceInfo.GetPhysicalAvailableMemoryInMiB();
+            Int64 tot = PerformanceInfo.GetTotalMemoryInMiB();
+            decimal percentFree = ((decimal)phav / (decimal)tot) * 100;
+            decimal percentOccupied = 100 - percentFree;
+            string icon_text = "" + percentOccupied + "%";
+
+            //String str = "X x O o";
+            g.Clear(DColor.Red);
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+            //g.DrawString(icon_text, fontToUse, brushToUse, -1, -0);
+            //g.DrawString(icon_text, fontToUse, brushToUse, -1, 8);
+            g.DrawString(icon_text, fontToUse, brushToUse, -1, -);
+            hIcon = (bitmapText.GetHicon());
+            TrayIconRAM = System.Drawing.Icon.FromHandle(hIcon);
+        }
+        */
+
+        //private System.Diagnostics.PerformanceCounter cpuCounter;
+        //cpuCounter = new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total");
+        private System.Diagnostics.PerformanceCounter cpuCounter = new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total");
+
+        private void UpdateIconCPU()
+        {
+            var (sendSpeed, recvSpeed) = DataTracker.Instance.CurrentSpeed;
+            var sendActivity = sendSpeed > 0;
+            var recvActivity = recvSpeed > 0;
+
+            //Font fontToUse = new Font("Microsoft Sans Serif", 16, FontStyle.Normal, GraphicsUnit.Pixel);
+            Font fontToUse = new Font("Microsoft Sans Serif", 11, DFontStyle.Regular, GraphicsUnit.Pixel);
+            DBrush brushToUse = new SolidBrush(DColor.White);
+            Bitmap bitmapText = new Bitmap(16, 16);
+            Graphics g = System.Drawing.Graphics.FromImage(bitmapText);
+
+            IntPtr hIcon;
+
+            // https://stackoverflow.com/questions/278071/how-to-get-the-cpu-usage-in-c
+            // TODO who usage per core as colored lines e.g. from left to right
+            // TODO show progress bar or counter from left to right when next average of CPU usage will be calculated
+             string icon_text = "" + cpuCounter.NextValue() + "";
+
+
+            //System.Diagnostics.PerformanceCounter ramCounter;
+            //ramCounter = new System.Diagnostics.PerformanceCounter("Memory", "Available MBytes");\
+            //string icon_text = "" + ramCounter.NextValue() + "";
+
+            // g.Clear(DColor.Transparent);
+            g.Clear(DColor.DarkRed);
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+            g.DrawString(icon_text, fontToUse, brushToUse, -2, 2);
+            hIcon = (bitmapText.GetHicon());
+            TrayIconRAM = System.Drawing.Icon.FromHandle(hIcon);
         }
 
         private void UpdateGraphUI()
